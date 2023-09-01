@@ -1,4 +1,5 @@
 #include "DxLib.h"
+#include <algorithm>
 
 struct InitialScreen {
 	int Width;			//スクリーンの横幅
@@ -54,6 +55,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// ポリゴンの裏面を描画しない
 	SetUseBackCulling(true);
 
+	float coneHeight = 0;
+	int randamNum = 0;
+
+	bool descentFlag = false;
+	bool risingFlag = false;
+	bool hintFlag = false;
+
+	VECTOR spherePos = { 0,0,0 };
 
 	while (ProcessMessage() == 0) {
 
@@ -68,17 +77,49 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			if (gaussRation > 0)
 				gaussRation--;
 		}
+		if (CheckHitKey(KEY_INPUT_RETURN)) {
+			descentFlag = true;
+		}
+		if (CheckHitKey(KEY_INPUT_SPACE)) {
+			risingFlag = true;
+		}
+		if (CheckHitKey(KEY_INPUT_Z)) {
+			hintFlag = true;
+		}
+
+		if (descentFlag) {
+			coneHeight = (std::max)(coneHeight - 0.2f, -18.0f);
+			if (coneHeight <= -18.0f){ 
+				descentFlag = false; 
+				randamNum = GetRand(2);
+				spherePos.x = 96 * randamNum - 96;
+			}
+		}
+
+		if (risingFlag) {
+			coneHeight = (std::min)(coneHeight + 0.2f, 32.0f);
+			if (coneHeight >= 32.0f) {
+				risingFlag = false;
+			}
+		}
+
+		if (hintFlag) {
+			coneHeight = (std::min)(coneHeight + 0.2f, -5.0f);
+			if (coneHeight >= -5.0f) {
+				hintFlag = false;
+			}
+		}
 
 		SetDrawScreen(writingScreen.color);
 		ClearDrawScreen();
 
 		SetCameraPositionAndTargetAndUpVec(VGet(0, 80, -200), VGet(0, 0, 0), VGet(0, 1, 0));
 
-		DrawSphere3D(VGet(0, 0, 0), 32, 32, 0xffffff, 0xffffff, true);
+		DrawSphere3D(spherePos, 32, 32, 0xffffff, 0xffffff, true);
 
-		DrawCone3D(VGet(0, 64, 0), VGet(0, 0, 0), 48, 32, 0x333333, 0x333333, true);
-
-		DrawLine3D(VGet(0, 0, -250), VGet(0, 0, 250), 0xff0000);
+		DrawCone3D(VGet(0, 64, 0), VGet(0, coneHeight, 0), 48, 32, 0x333333, 0x333333, true);
+		DrawCone3D(VGet(-96, 64, 0), VGet(-96, coneHeight, 0), 48, 32, 0x333333, 0x333333, true);
+		DrawCone3D(VGet(96, 64, 0), VGet(96, coneHeight, 0), 48, 32, 0x333333, 0x333333, true);
 
 		GraphFilterBlt(writingScreen.color, writingScreen.highBlight, DX_GRAPH_FILTER_BRIGHT_CLIP, DX_CMP_LESS, 230, true, 0x000000, 255);
 		GraphFilterBlt(writingScreen.highBlight, writingScreen.reduction, DX_GRAPH_FILTER_DOWN_SCALE, reductionSize);
@@ -100,7 +141,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		SetDrawMode(DX_DRAWMODE_NEAREST);
 
-		DrawFormatString(0, 0, 0xffffff, L"gauss:%d", gaussRation);
+		DrawString(0, 0, L"Enter 三角錐の降下　：　Space 三角錐上昇　：　Z ヒント", 0xffffff);
+		DrawString(0, 16, L"どこに球が隠れているかな？", 0xffffff);
+		DrawFormatString(520, 0, 0xffffff, L"gauss:%d", gaussRation);
 
 		ScreenFlip();
 	}
